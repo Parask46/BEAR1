@@ -1,0 +1,27 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "execute_custom_skill",
+      "description": "Run a dynamically registered user skill/plugin function from SKILLS directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "skill_name": {
+            "type": "string",
+            "description": "Name of the target skill module (file name without .py)."
+          },
+          "function_name": {
+            "type": "string",
+            "description": "Name of the target function inside the skill module."
+          },
+          "kwargs_json": {
+            "type": "string",
+            "description": "JSON string of key-value arguments to pass into the function."
+          }
+        },
+        "required": ["skill_name", "function_name"]
+      }
+    }
+  }
+]

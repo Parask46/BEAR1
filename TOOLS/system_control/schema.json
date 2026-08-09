@@ -1,0 +1,74 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "execute_shell_command",
+      "description": "Execute a safe shell command on the host OS (Windows/macOS/Linux) and return stdout/stderr.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The command line string to execute."
+          }
+        },
+        "required": ["command"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_local_file",
+      "description": "Read the contents of a local file.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filepath": {
+            "type": "string",
+            "description": "Absolute or relative path to the file."
+          }
+        },
+        "required": ["filepath"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "write_local_file",
+      "description": "Write or overwrite content to a local file, creating directories if missing.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filepath": {
+            "type": "string",
+            "description": "Path to write the file."
+          },
+          "content": {
+            "type": "string",
+            "description": "Text content to save."
+          }
+        },
+        "required": ["filepath", "content"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_directory",
+      "description": "List files and subdirectories inside a directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Target directory path. Defaults to current directory."
+          }
+        },
+        "required": []
+      }
+    }
+  }
+]
