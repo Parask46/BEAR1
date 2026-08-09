@@ -1,0 +1,35 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "add_background_task",
+      "description": "Schedule a background AI task. This assigns priority, saves the prompt to a queue, and blocks out time on Apple Calendar.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Short name for the task."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "The exact prompt/instructions for the AI to run in the background."
+          },
+          "priority": {
+            "type": "integer",
+            "description": "1 (Urgent), 2 (Normal), 3 (Background/Low)"
+          },
+          "start_time": {
+            "type": "string",
+            "description": "Start time in ISO 8601 format."
+          },
+          "end_time": {
+            "type": "string",
+            "description": "End time in ISO 8601 format."
+          }
+        },
+        "required": ["title", "prompt", "priority", "start_time", "end_time"]
+      }
+    }
+  }
+]

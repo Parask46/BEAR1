@@ -1,0 +1,20 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "where do i live?"
+    },
+    {
+      "role": "assistant",
+      "content": "i don't have access to your personal information like your address. would you like help with something else?"
+    },
+    {
+      "role": "user",
+      "content": "add something to my calendar for me will ya?"
+    },
+    {
+      "role": "assistant",
+      "content": "I'll help you add an event. Could you please provide the title, start time, and end time for the event in ISO 8601 format (e.g., \"2026-08-15T14:30:00\")? Also, is there a description or note you'd like to include?"
+    }
+  ]
+}

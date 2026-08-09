@@ -1,0 +1,48 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "get_apple_calendar_events",
+      "description": "Fetch upcoming events from the user's Apple Calendar (iCloud). Use this when the user asks about their schedule or upcoming events.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "days_ahead": {
+            "type": "integer",
+            "description": "Number of days ahead to look for events. Default is 7."
+          }
+        },
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "add_apple_calendar_event",
+      "description": "Create a new event on the user's Apple Calendar. Use this when the user asks to schedule something, add an event, or block time.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "The name or title of the event."
+          },
+          "start_time": {
+            "type": "string",
+            "description": "Start time in ISO 8601 format, e.g., '2026-08-15T14:30:00'."
+          },
+          "end_time": {
+            "type": "string",
+            "description": "End time in ISO 8601 format, e.g., '2026-08-15T15:30:00'."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional notes or description for the event."
+          }
+        },
+        "required": ["title", "start_time", "end_time"]
+      }
+    }
+  }
+]

@@ -1,0 +1,31 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "write_note",
+      "description": "Save or update a note in the Obsidian long-term memory vault. Use this when the user asks you to remember something permanently.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filename": {"type": "string", "description": "Name of file (e.g. user_facts.md)"},
+          "content": {"type": "string", "description": "The markdown content to save."}
+        },
+        "required": ["filename", "content"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_note",
+      "description": "Read the contents of an existing note from long-term memory. Use this to recall facts you have saved.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filename": {"type": "string", "description": "Name of file to read."}
+        },
+        "required": ["filename"]
+      }
+    }
+  }
+]
