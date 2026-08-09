@@ -1,0 +1,26 @@
+[
+  {
+    "task_id": 1,
+    "title": "Cut Grass",
+    "prompt": "Cut the grass in the backyard",
+    "priority": 2,
+    "status": "pending",
+    "scheduled_for": "2026-08-10T09:00:00"
+  },
+  {
+    "task_id": 2,
+    "title": "[AI Task] Roman Architecture Summary",
+    "prompt": "Prompt: Write a 3-page summary on Roman architecture.",
+    "priority": 2,
+    "status": "pending",
+    "scheduled_for": "2026-08-09T16:40:00+00:00"
+  },
+  {
+    "task_id": 3,
+    "title": "[AI Task] Cut Grass",
+    "prompt": "Prompt: Cut the grass in the backyard",
+    "priority": 2,
+    "status": "pending",
+    "scheduled_for": "2026-08-10T09:00:00+00:00"
+  }
+]
