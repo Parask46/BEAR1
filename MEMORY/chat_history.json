@@ -11,6 +11,18 @@
     {
       "role": "assistant",
       "content": "Hey there! Not much going on, but I'm here to help. What's up?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey there! It's Monday, August 10th, 2026, and I'm here to chat. What's on your mind?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey, what's up?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey there! What's going on?"
     }
   ]
 }

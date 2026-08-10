@@ -41,6 +41,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
         }
 
         .top-area {
@@ -48,10 +49,16 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 15vh;
+            padding-top: 22vh; /* Centered initial layout */
+            transition: padding-top 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Perfectly aligned ASCII logo */
+        /* Shift top area when chat is active */
+        .app.chat-active .top-area {
+            padding-top: 20px;
+        }
+
+        /* Perfectly aligned ASCII logo with smooth fade-out */
         .bear-logo {
             margin: 0 0 35px;
             color: var(--accent);
@@ -63,10 +70,34 @@
             text-align: center;
             white-space: pre;
             text-shadow: 0 0 25px rgba(167, 139, 250, 0.4);
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.5s ease, transform 0.5s ease, margin 0.5s ease, max-height 0.5s ease;
+            max-height: 200px;
+        }
+
+        /* Fade out and collapse logo when active */
+        .app.chat-active .bear-logo {
+            opacity: 0;
+            transform: translateY(-20px);
+            margin: 0;
+            max-height: 0;
+            pointer-events: none;
+            overflow: hidden;
         }
 
         .chat-shell {
             width: min(100%, 720px);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Position chat shell at bottom when active */
+        .app.chat-active .chat-shell {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
         }
 
         /* Modern pill-shaped chat box */
@@ -104,7 +135,7 @@
             padding: 0;
             line-height: 24px;
             margin: 6px 0;
-            overflow: hidden; /* Hides native scrollbars and extra arrows */
+            overflow: hidden; /* Hides native scrollbars */
             -ms-overflow-style: none; /* IE and Edge */
             scrollbar-width: none; /* Firefox */
         }
@@ -187,7 +218,7 @@
             position: absolute;
             left: 0;
             bottom: 52px;
-            z-index: 10;
+            z-index: 110;
             display: none;
             width: min(320px, calc(100vw - 28px));
             padding: 10px;
@@ -207,6 +238,12 @@
             font-size: 0.92rem;
         }
 
+        .tool-dropdown p {
+            margin: 4px 6px;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
         .tool-option {
             width: 100%;
             margin-bottom: 6px;
@@ -219,14 +256,9 @@
             text-align: left;
         }
 
-        .tool-option:hover {
+        .tool-option:hover,
+        .tool-option.selected {
             background: rgba(255, 255, 255, 0.12);
-        }
-
-        .tool-option small {
-            display: block;
-            margin-top: 2px;
-            color: var(--muted);
         }
 
         .effort-menu {
@@ -237,7 +269,7 @@
             position: absolute;
             right: 0;
             bottom: 48px;
-            z-index: 10;
+            z-index: 110;
             display: none;
             width: 120px;
             padding: 8px;
@@ -274,9 +306,53 @@
             background: rgba(255, 255, 255, 0.12);
         }
 
+        /* Message Log Area */
+        .messages {
+            width: min(100% - 24px, 720px);
+            margin-top: 10px;
+            overflow-y: auto;
+            padding-bottom: 100px; /* Leaves room for floating bottom chat */
+            flex: 1;
+            display: none;
+        }
+
+        .app.chat-active .messages {
+            display: block;
+        }
+
+        .message {
+            width: fit-content;
+            max-width: 85%;
+            margin: 10px 0;
+            padding: 10px 14px;
+            border-radius: 14px;
+            white-space: pre-wrap;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+        }
+
+        .user-message {
+            margin-left: auto;
+            background: #3b3655;
+            border-bottom-right-radius: 4px;
+        }
+
+        .assistant-message {
+            margin-right: auto;
+            background: #22242b;
+            border-bottom-left-radius: 4px;
+        }
+
+        .error-message {
+            margin-right: auto;
+            color: #ffb4ab;
+            background: #4b2525;
+            border-bottom-left-radius: 4px;
+        }
+
         @media (max-width: 640px) {
             .top-area {
-                padding-top: 10vh;
+                padding-top: 15vh;
             }
             .bear-logo {
                 font-size: clamp(0.6rem, 3.5vw, 1.2rem);
@@ -288,7 +364,7 @@
     </style>
 </head>
 <body>
-    <main class="app">
+    <main class="app" id="app">
         <section class="top-area">
             <pre class="bear-logo">████╗  █████╗ █████╗  ████╗   
 ██╔═██╗██╔══╝ ██╔══██╗██╔═██╗ 
@@ -302,7 +378,7 @@
                     
                     <!-- Left: Plus Button & Tool Menu -->
                     <div class="tool-menu">
-                        <button class="icon-button" id="plusButton" type="button" title="Add attachment">
+                        <button class="icon-button" id="plusButton" type="button" title="Select Model">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -310,11 +386,7 @@
                         </button>
 
                         <div class="tool-dropdown" id="toolDropdown">
-                            <h3>Select Ollama Model</h3>
-                            <button type="button" class="tool-option">Llama 3 <small>8B Parameters</small></button>
-                            <button type="button" class="tool-option">Mistral <small>7B Parameters</small></button>
-                            <button type="button" class="tool-option">Gemma 2 <small>9B Parameters</small></button>
-                            <button type="button" class="tool-option">Mixtral <small>8x7B Parameters</small></button>
+                            <h3>Loading Ollama models...</h3>
                         </div>
                     </div>
 
@@ -332,12 +404,7 @@
                             </div>
                             
                             <!-- Effort Dropdown -->
-                            <div class="effort-dropdown" id="effortDropdown">
-                                <button type="button" class="effort-option selected" data-value="Low">Low</button>
-                                <button type="button" class="effort-option" data-value="Medium">Medium</button>
-                                <button type="button" class="effort-option" data-value="High">High</button>
-                                <button type="button" class="effort-option" data-value="Max">Max</button>
-                            </div>
+                            <div class="effort-dropdown" id="effortDropdown"></div>
                         </div>
                         
                         <!-- Send Button (Up Arrow) -->
@@ -352,83 +419,211 @@
             </div>
         </section>
 
+        <!-- Messages log container -->
         <section class="messages" id="messages"></section>
     </main>
 
     <script>
+        const app = document.getElementById("app");
         const chatForm = document.getElementById("chatForm");
         const promptBox = document.getElementById("prompt");
         const sendButton = document.getElementById("sendButton");
+        const messages = document.getElementById("messages");
         const plusButton = document.getElementById("plusButton");
         const toolDropdown = document.getElementById("toolDropdown");
         const effortSelector = document.getElementById("effortSelector");
         const effortDropdown = document.getElementById("effortDropdown");
         const effortLabel = document.getElementById("effortLabel");
-        const effortOptions = document.querySelectorAll(".effort-option");
 
-        // Toggle tool dropdown
+        let selectedModel = null;
+        let selectedEffort = "Low";
+        let isSending = false;
+
+        function triggerActiveChatLayout() {
+            if (!app.classList.contains("chat-active")) {
+                app.classList.add("chat-active");
+            }
+        }
+
+        function addMessage(text, type) {
+            triggerActiveChatLayout();
+            const bubble = document.createElement("div");
+            bubble.className = `message ${type}-message`;
+            bubble.textContent = text;
+            messages.appendChild(bubble);
+            messages.scrollTop = messages.scrollHeight;
+            return bubble;
+        }
+
+        function setSendState() {
+            sendButton.classList.toggle("active", promptBox.value.trim().length > 0 && !isSending);
+            sendButton.disabled = isSending;
+        }
+
+        function createModelMenu(models) {
+            toolDropdown.innerHTML = "";
+            const heading = document.createElement("h3");
+            heading.textContent = "Select Ollama Model";
+            toolDropdown.appendChild(heading);
+
+            if (!models.length) {
+                const empty = document.createElement("p");
+                empty.textContent = "No Ollama models found.";
+                toolDropdown.appendChild(empty);
+                return;
+            }
+
+            models.forEach((model, index) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "tool-option";
+                if (index === 0) button.classList.add("selected");
+                button.dataset.model = model;
+                button.textContent = model;
+                button.addEventListener("click", () => {
+                    selectedModel = model;
+                    document.querySelectorAll(".tool-option").forEach(item => item.classList.remove("selected"));
+                    button.classList.add("selected");
+                    plusButton.title = `Model: ${model}`;
+                    toolDropdown.classList.remove("open");
+                });
+                toolDropdown.appendChild(button);
+            });
+        }
+
+        async function loadConfig() {
+            try {
+                const response = await fetch("/api/config");
+                const config = await response.json();
+                selectedEffort = config.default_effort || "Low";
+                effortLabel.textContent = selectedEffort;
+
+                effortDropdown.innerHTML = "";
+                const efforts = config.efforts || {
+                    "Low": { label: "Low" },
+                    "Medium": { label: "Medium" },
+                    "High": { label: "High" },
+                    "Max": { label: "Max" }
+                };
+
+                Object.entries(efforts).forEach(([value, data]) => {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "effort-option";
+                    button.dataset.value = value;
+                    button.textContent = data.label || value;
+                    if (value === selectedEffort) button.classList.add("selected");
+                    button.addEventListener("click", () => {
+                        selectedEffort = value;
+                        effortLabel.textContent = data.label || value;
+                        document.querySelectorAll(".effort-option").forEach(item => item.classList.remove("selected"));
+                        button.classList.add("selected");
+                        effortDropdown.classList.remove("open");
+                    });
+                    effortDropdown.appendChild(button);
+                });
+            } catch (e) {
+                effortDropdown.innerHTML = "";
+                ["Low", "Medium", "High", "Max"].forEach(val => {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "effort-option";
+                    if (val === "Low") button.classList.add("selected");
+                    button.textContent = val;
+                    button.addEventListener("click", () => {
+                        selectedEffort = val;
+                        effortLabel.textContent = val;
+                        document.querySelectorAll(".effort-option").forEach(item => item.classList.remove("selected"));
+                        button.classList.add("selected");
+                        effortDropdown.classList.remove("open");
+                    });
+                    effortDropdown.appendChild(button);
+                });
+            }
+        }
+
+        async function loadModels() {
+            toolDropdown.innerHTML = "<h3>Loading Ollama models...</h3>";
+            try {
+                const response = await fetch("/api/models");
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || "Could not load models.");
+                createModelMenu(data.models || []);
+                selectedModel = data.models?.[0] || null;
+            } catch (error) {
+                toolDropdown.innerHTML = `<h3>Ollama models unavailable</h3><p>${error.message}</p>`;
+            }
+        }
+
         plusButton.addEventListener("click", () => {
             toolDropdown.classList.toggle("open");
             effortDropdown.classList.remove("open");
         });
 
-        // Toggle effort dropdown
         effortSelector.addEventListener("click", () => {
             effortDropdown.classList.toggle("open");
             toolDropdown.classList.remove("open");
         });
 
-        // Handle effort option selection
-        effortOptions.forEach(option => {
-            option.addEventListener("click", (e) => {
-                effortOptions.forEach(opt => opt.classList.remove("selected"));
-                e.target.classList.add("selected");
-                effortLabel.textContent = e.target.getAttribute("data-value");
-                effortDropdown.classList.remove("open");
-            });
-        });
-
-        // Close dropdowns when clicking outside
-        document.addEventListener("click", (e) => {
-            if (!plusButton.contains(e.target) && !toolDropdown.contains(e.target)) {
+        document.addEventListener("click", event => {
+            if (!plusButton.contains(event.target) && !toolDropdown.contains(event.target)) {
                 toolDropdown.classList.remove("open");
             }
-            if (!effortSelector.contains(e.target) && !effortDropdown.contains(e.target)) {
+            if (!effortSelector.contains(event.target) && !effortDropdown.contains(event.target)) {
                 effortDropdown.classList.remove("open");
             }
         });
 
-        // Auto-resize textarea and activate Send button
-        promptBox.addEventListener("input", function() {
-            this.style.height = "24px";
-            this.style.height = Math.min(this.scrollHeight, 150) + "px";
-            
-            if (this.value.trim() !== "") {
-                sendButton.classList.add("active");
-            } else {
-                sendButton.classList.remove("active");
+        promptBox.addEventListener("input", () => {
+            promptBox.style.height = "24px";
+            promptBox.style.height = `${Math.min(promptBox.scrollHeight, 150)}px`;
+            setSendState();
+        });
+
+        chatForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            const message = promptBox.value.trim();
+            if (!message || isSending) return;
+
+            triggerActiveChatLayout();
+
+            isSending = true;
+            setSendState();
+            addMessage(message, "user");
+            promptBox.value = "";
+            promptBox.style.height = "24px";
+
+            try {
+                const response = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message,
+                        model: selectedModel,
+                        effort: selectedEffort
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || "Chat request failed.");
+                addMessage(data.reply || "Bear returned an empty response.", "assistant");
+            } catch (error) {
+                addMessage(`Error: ${error.message}`, "error");
+            } finally {
+                isSending = false;
+                setSendState();
+                promptBox.focus();
             }
         });
 
-        // Handle sending the message
-        chatForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            if (promptBox.value.trim() !== "") {
-                promptBox.value = "";
-                promptBox.style.height = "24px";
-                sendButton.classList.remove("active");
-                toolDropdown.classList.remove("open");
+        promptBox.addEventListener("keydown", event => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                chatForm.requestSubmit();
             }
         });
 
-        // Submit on enter (but allow shift+enter for new lines)
-        promptBox.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                if (promptBox.value.trim() !== "") {
-                    chatForm.dispatchEvent(new Event("submit"));
-                }
-            }
+        Promise.all([loadConfig(), loadModels()]).catch(error => {
+            addMessage(`Startup error: ${error.message}`, "error");
         });
     </script>
 </body>

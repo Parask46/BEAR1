@@ -1,0 +1,22 @@
+{
+  "default_effort": "Low",
+  "default_model": "qwen3:8b",
+  "efforts": {
+    "Low": {
+      "label": "Low",
+      "instruction": "Keep the response concise and use minimal reasoning."
+    },
+    "Medium": {
+      "label": "Medium",
+      "instruction": "Give a balanced response with enough explanation to be useful."
+    },
+    "High": {
+      "label": "High",
+      "instruction": "Think carefully, check important details, and give a thorough response."
+    },
+    "Max": {
+      "label": "Max",
+      "instruction": "Use the most thorough reasoning available and provide a detailed, carefully checked response."
+    }
+  }
+}
