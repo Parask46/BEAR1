@@ -23,6 +23,86 @@
     {
       "role": "assistant",
       "content": "Hey there! What's going on?"
+    },
+    {
+      "role": "user",
+      "content": "gdh"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey! How's your day going?"
+    },
+    {
+      "role": "user",
+      "content": "its good how is yours?"
+    },
+    {
+      "role": "assistant",
+      "content": "Not much, I'm here to help. How's your day?"
+    },
+    {
+      "role": "user",
+      "content": "whats on my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "Your calendar for the next 7 days shows a pattern of routine activities:  \n- **Daily repeats**: \"Do nothing,\" \"Go to bed,\" \"asleep,\" and \"Mommy gym\" (specific times vary).  \n- **Special tasks**: Garbage/recycling day, filter replacement, and gym sessions.  \n\nNeed help adjusting or summarizing anything? 🗓️"
+    },
+    {
+      "role": "user",
+      "content": "yo"
+    },
+    {
+      "role": "assistant",
+      "content": "Yo! What's up?"
+    },
+    {
+      "role": "user",
+      "content": "show me my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "You've got a lot of \"Do nothing\" time scheduled. Here are the notable items for the next week:\n\n*   **Aug 12**: Mommy gym @ 5:30 AM\n*   **Aug 13**: Garbage/recycling day\n*   **Aug 14**: Mommy gym @ 6:30 AM\n*   **Aug 15**: Replace filter\n*   **Aug 16**: Mommy gym @ 8:00 AM\n\nWant more details on a specific day?"
+    },
+    {
+      "role": "user",
+      "content": "yo"
+    },
+    {
+      "role": "assistant",
+      "content": "Yo! What's up?"
+    },
+    {
+      "role": "user",
+      "content": "yo"
+    },
+    {
+      "role": "assistant",
+      "content": "Yo! What's up?"
+    },
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey! How's it going?"
+    },
+    {
+      "role": "user",
+      "content": "show me my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "You've got a lot of \"Do nothing\" time scheduled. Here are the notable items for the next week:\n\n*   **Aug 12**: Mommy gym @ 5:30 AM\n*   **Aug 13**: Garbage/recycling day\n*   **Aug 14**: Mommy gym @ 6:30 AM\n*   **Aug 15**: Replace filter\n*   **Aug 16**: Mommy gym @ 8:00 AM\n\nWant more details on a specific day?"
+    },
+    {
+      "role": "user",
+      "content": "show me my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "You've got a lot of \"Do nothing\" time scheduled. Here are the notable items for the next week:\n\n*   **Aug 12**: Mommy gym @ 5:30 AM\n*   **Aug 13**: Garbage/recycling day\n*   **Aug 14**: Mommy gym @ 6:30 AM\n*   **Aug 15**: Replace filter\n*   **Aug 16**: Mommy gym @ 8:00 AM\n\nWant more details on a specific day?"
     }
   ]
 }

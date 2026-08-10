@@ -109,16 +109,20 @@ class BearHandler(SimpleHTTPRequestHandler):
                     f"Use it when appropriate.]\n\n{message}"
                 )
 
-            reply = chat_with_bear_agent(
+            # --- MODIFIED: Unpack tuple and inject into JSON ---
+            reply, tools = chat_with_bear_agent(
                 message,
                 effort=effort,
                 model=model,
             )
             self.send_json(200, {
                 "reply": reply,
+                "tools_used": tools,  # New payload data
                 "effort": effort,
                 "model": model,
             })
+            # ---------------------------------------------------
+            
         except json.JSONDecodeError:
             self.send_json(400, {"error": "Invalid JSON request"})
         except Exception as error:

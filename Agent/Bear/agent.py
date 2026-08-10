@@ -337,9 +337,9 @@ def trigger_startup_greeting():
 def chat_with_bear_agent(user_prompt, effort=None, model=None):
     user_prompt = str(user_prompt or "").strip()
     if not user_prompt:
-        return "Please enter a message."
+        return "Please enter a message.", []
     if not data_filter(user_prompt):
-        return "I can't process that request right now."
+        return "I can't process that request right now.", []
 
     config = load_effort_config()
     selected_effort = normalize_effort(effort, config)
@@ -351,17 +351,6 @@ def chat_with_bear_agent(user_prompt, effort=None, model=None):
         f"{instruction}\n\n"
         f"{user_prompt}"
     )
-    cache_key = f"{selected_model}|{selected_effort}|{prompt}"
-
-    cached = llm_cache.get(cache_key)
-    if cached:
-        history = load_chat_history()
-        history.extend([
-            {"role": "user", "content": user_prompt},
-            {"role": "assistant", "content": cached},
-        ])
-        save_chat_history(history)
-        return cached
 
     agent_prompt = load_file(
         AGENT_PROMPT_FILE,
@@ -382,6 +371,7 @@ def chat_with_bear_agent(user_prompt, effort=None, model=None):
         {"role": "user", "content": prompt},
     ]
 
+    tools_used = []
     try:
         response = ollama.chat(
             model=selected_model,
@@ -390,6 +380,11 @@ def chat_with_bear_agent(user_prompt, effort=None, model=None):
         )
 
         if response.get("message", {}).get("tool_calls"):
+            # Track which tools were utilized
+            for call in response["message"]["tool_calls"]:
+                tool_name = call.get("function", {}).get("name", "Unknown")
+                tools_used.append(tool_name)
+
             messages = execute_tool_calls(response["message"], messages)
             response = ollama.chat(model=selected_model, messages=messages)
 
@@ -397,7 +392,7 @@ def chat_with_bear_agent(user_prompt, effort=None, model=None):
             response.get("message", {}).get("content", "")
         )
     except Exception as error:
-        return f"[System Error: could not reach model '{selected_model}' - {error}]"
+        return f"[System Error: could not reach model '{selected_model}' - {error}]", tools_used
 
     llm_cache.set(cache_key, answer)
     history.extend([
@@ -405,7 +400,7 @@ def chat_with_bear_agent(user_prompt, effort=None, model=None):
         {"role": "assistant", "content": answer},
     ])
     save_chat_history(history)
-    return answer
+    return answer, tools_used
 
 
 def main():
@@ -432,9 +427,12 @@ def main():
                     print("\n[Memory Cleared - Ready for new conversation]\n")
                     continue
 
-                reply = chat_with_bear_agent(user_input)
-                print(f"\nBear: {reply}\n")
-                print("-" * 40)
+                reply, tools = chat_with_bear_agent(user_input)
+                
+                print(f"\nBear: {reply}")
+                if tools:
+                    print(f"[Tools Used: {', '.join(tools)}]")
+                print("\n" + "-" * 40)
             except KeyboardInterrupt:
                 print("\nShutting down...")
                 break
