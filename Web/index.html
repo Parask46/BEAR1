@@ -435,6 +435,9 @@
         const effortDropdown = document.getElementById("effortDropdown");
         const effortLabel = document.getElementById("effortLabel");
 
+        // Helper to determine API host when opened locally as a file vs via a server
+        const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8765" : "";
+
         let selectedModel = null;
         let selectedEffort = "Low";
         let isSending = false;
@@ -493,7 +496,7 @@
 
         async function loadConfig() {
             try {
-                const response = await fetch("/api/config");
+                const response = await fetch(`${API_BASE}/api/config`);
                 const config = await response.json();
                 selectedEffort = config.default_effort || "Low";
                 effortLabel.textContent = selectedEffort;
@@ -545,7 +548,7 @@
         async function loadModels() {
             toolDropdown.innerHTML = "<h3>Loading Ollama models...</h3>";
             try {
-                const response = await fetch("/api/models");
+                const response = await fetch(`${API_BASE}/api/models`);
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || "Could not load models.");
                 createModelMenu(data.models || []);
@@ -594,7 +597,7 @@
             promptBox.style.height = "24px";
 
             try {
-                const response = await fetch("/api/chat", {
+                const response = await fetch(`${API_BASE}/api/chat`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

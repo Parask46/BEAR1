@@ -4,12 +4,9 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
-# Project layout:
-# C:\BEAR\Web\webserver.py
-# C:\BEAR\Agent\Bear\agent.py
 BEAR_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-AGENT_DIR = os.path.join(BEAR_ROOT, "Agent", "Bear")
 WEB_DIR = os.path.join(BEAR_ROOT, "Web")
+AGENT_DIR = os.path.join(BEAR_ROOT, "Agent", "Bear")
 
 if AGENT_DIR not in sys.path:
     sys.path.insert(0, AGENT_DIR)
@@ -32,15 +29,9 @@ def tool_descriptions():
         function = schema.get("function", {})
         name = function.get("name")
         if name:
-            descriptions[name] = function.get(
-                "description", "Available Bear tool"
-            )
-
+            descriptions[name] = function.get("description", "Available Bear tool")
     return [
-        {
-            "name": name,
-            "description": descriptions.get(name, "Available Bear tool"),
-        }
+        {"name": name, "description": descriptions.get(name, "Available Bear tool")}
         for name in ALL_FUNCTIONS
     ]
 
@@ -78,10 +69,7 @@ class BearHandler(SimpleHTTPRequestHandler):
             if not models:
                 self.send_json(503, {
                     "models": [],
-                    "error": (
-                        "No Ollama models were found. Start Ollama and install "
-                        "a model, for example: ollama pull qwen3:8b"
-                    ),
+                    "error": "Ollama is not running or no local models are installed."
                 })
                 return
             self.send_json(200, {"models": models})
@@ -93,7 +81,6 @@ class BearHandler(SimpleHTTPRequestHandler):
 
         if path == "/":
             self.path = "/index.html"
-
         super().do_GET()
 
     def do_POST(self):
@@ -103,9 +90,7 @@ class BearHandler(SimpleHTTPRequestHandler):
 
         try:
             length = int(self.headers.get("Content-Length", "0"))
-            raw_body = self.rfile.read(length).decode("utf-8")
-            payload = json.loads(raw_body)
-
+            payload = json.loads(self.rfile.read(length).decode("utf-8"))
             message = str(payload.get("message", "")).strip()
             effort = str(payload.get("effort", "Low")).strip().title()
             model = str(payload.get("model", "")).strip() or None
@@ -129,7 +114,6 @@ class BearHandler(SimpleHTTPRequestHandler):
                 effort=effort,
                 model=model,
             )
-
             self.send_json(200, {
                 "reply": reply,
                 "effort": effort,
