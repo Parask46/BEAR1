@@ -1,10 +1,12 @@
-import time
-import random
-import subprocess
 import os
 import sys
 import json
+import time
+import random
+import hashlib
 import datetime
+import subprocess
+
 import psutil
 import ollama
 import caldav
@@ -16,13 +18,25 @@ QUEUE_FILE = os.path.join(BEAR_ROOT, "MEMORY", "task_queue.json")
 TASKS_DIR = os.path.join(BEAR_ROOT, "MEMORY", "MEMORY-LONG", "TASKS")
 MEMORY_LONG_DIR = os.path.join(BEAR_ROOT, "MEMORY", "MEMORY-LONG")
 CALENDAR_CREDS_DIR = os.path.join(BEAR_ROOT, "TOOLS", "apple_calendar")
-SYNC_CONFIG_FILE = os.path.join(CALENDAR_CREDS_DIR, "calendar_sync_config.json")
-CALENDAR_SCHEDULE_NOTE = os.path.join(MEMORY_LONG_DIR, "Calendar_Schedule.md")
+SYNC_CONFIG_FILE = os.path.join(
+    CALENDAR_CREDS_DIR,
+    "calendar_sync_config.json",
+)
+CALENDAR_SCHEDULE_NOTE = os.path.join(
+    MEMORY_LONG_DIR,
+    "Calendar_Schedule.md",
+)
+
+LLM_MODEL = "qwen3:8b"
+SYNC_INTERVAL_SECONDS = 300
+CONSOLE_POP_CHANCE = 0.10
+CONSOLE_COOLDOWN_SECONDS = 10800
 
 os.makedirs(TASKS_DIR, exist_ok=True)
 
 if CALENDAR_CREDS_DIR not in sys.path:
     sys.path.insert(0, CALENDAR_CREDS_DIR)
+
 try:
     import credentials as creds
 except ImportError:
@@ -30,264 +44,360 @@ except ImportError:
 
 
 class DeviceHardwareMonitor:
+    def __init__(self, cache_seconds=5):
+        self.cache_seconds = cache_seconds
+        self.last_check = 0.0
+        self.last_status = "OK"
+        psutil.cpu_percent(interval=None)
+
     def get_status(self):
+        now = time.time()
+        if now - self.last_check < self.cache_seconds:
+            return self.last_status
+
         battery = psutil.sensors_battery()
         if battery and not battery.power_plugged and battery.percent < 20:
-            return "CRITICAL_BATTERY"
-            
-        cpu_usage = psutil.cpu_percent(interval=1)
-        if cpu_usage > 85:
-            return "HIGH_LOAD"
-            
-        return "OK"
+            self.last_status = "CRITICAL_BATTERY"
+        else:
+            cpu_usage = psutil.cpu_percent(interval=None)
+            self.last_status = "HIGH_LOAD" if cpu_usage > 85 else "OK"
+
+        self.last_check = now
+        return self.last_status
 
 
 def pop_bear_console():
-    CREATE_NEW_CONSOLE = 0x00000010
-    subprocess.Popen([sys.executable, AGENT_PATH], creationflags=CREATE_NEW_CONSOLE, cwd=BEAR_ROOT)
+    create_new_console = 0x00000010
+    subprocess.Popen(
+        [sys.executable, AGENT_PATH],
+        creationflags=create_new_console,
+        cwd=BEAR_ROOT,
+    )
 
 
 def process_task(task):
-    try:
-        response = ollama.chat(
-            model='qwen3:8b',
-            messages=[
-                {'role': 'system', 'content': 'You are an ai agent, executing a scheduled background task. Output the results cleanly using Obsidian markdown format. No emojis.'},
-                {'role': 'user', 'content': task['prompt']}
-            ]
-        )
-        output = response['message']['content']
-        
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        safe_title = "".join([c for c in task['title'] if c.isalpha() or c.isdigit() or c==' ']).rstrip()
-        filename = f"TaskResult_{safe_title.replace(' ', '_')}_{timestamp}.md"
-        filepath = os.path.join(TASKS_DIR, filename)
-        
-        md_content = f"---\ntags: [background-task, ai-generated]\ndate: {timestamp}\npriority: {task.get('priority', 3)}\n---\n# {task['title']}\n\n**Prompt:** {task['prompt']}\n\n---\n\n### Result\n{output}\n"
-        
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(md_content)
-            
-    except Exception:
-        pass
+    response = ollama.chat(
+        model=LLM_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are an AI agent executing a scheduled background task. "
+                    "Output the result cleanly using Obsidian Markdown. No emojis."
+                ),
+            },
+            {"role": "user", "content": task["prompt"]},
+        ],
+    )
+    output = response["message"]["content"]
+
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    safe_title = "".join(
+        character
+        for character in task["title"]
+        if character.isalnum() or character == " "
+    ).strip()
+    filename = f"TaskResult_{safe_title.replace(' ', '_')}_{timestamp}.md"
+    filepath = os.path.join(TASKS_DIR, filename)
+
+    markdown = (
+        "---\n"
+        "tags: [background-task, ai-generated]\n"
+        f"date: {timestamp}\n"
+        f"priority: {task.get('priority', 3)}\n"
+        "---\n"
+        f"# {task['title']}\n\n"
+        f"**Prompt:** {task['prompt']}\n\n"
+        "---\n\n"
+        "### Result\n"
+        f"{output}\n"
+    )
+
+    with open(filepath, "w", encoding="utf-8") as file:
+        file.write(markdown)
 
 
 def load_sync_config():
-    if os.path.exists(SYNC_CONFIG_FILE):
-        try:
-            with open(SYNC_CONFIG_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {
+    default_config = {
         "sync_enabled": True,
-        "sync_days_past": 7,
-        "sync_days_ahead": 28,
-        "categories": {"schoolwork": True, "homestuff": True, "events": True, "personal": True}
+        "sync_days_past": 1,
+        "sync_days_ahead": 7,
+        "categories": {
+            "schoolwork": True,
+            "homestuff": True,
+            "events": True,
+            "personal": True,
+        },
     }
+
+    if not os.path.exists(SYNC_CONFIG_FILE):
+        return default_config
+
+    try:
+        with open(SYNC_CONFIG_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except (OSError, json.JSONDecodeError):
+        return default_config
+
+
+def events_hash(events):
+    content = json.dumps(events, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(content).hexdigest()
+
+
+last_events_hash = None
 
 
 def classify_calendar_events_with_llm(raw_events, config):
-    """Uses Ollama to process all calendar events and classify them into categories."""
+    global last_events_hash
+
     if not raw_events:
         return
 
-    active_categories = [cat for cat, enabled in config.get("categories", {}).items() if enabled]
-    
-    prompt = f"""You are a calendar sorting assistant. Analyze these raw calendar events and categorize each event into exactly ONE of these active categories:
+    current_hash = events_hash(raw_events)
+    if current_hash == last_events_hash:
+        return
+
+    active_categories = [
+        category
+        for category, enabled in config.get("categories", {}).items()
+        if enabled
+    ]
+
+    prompt = f"""You are a calendar sorting assistant. Categorize each event into exactly ONE active category:
 {json.dumps(active_categories)}
 
 Definitions:
 - schoolwork: homework, assignments, studying, school projects, classes
 - homestuff: chores, household tasks, family errands, home maintenance
-- events: social outings, going out, parties, hangouts with friends
-- personal: doctor appointments, personal care, medical, individual notes
+- events: social outings, parties, hangouts, concerts, and leisure
+- personal: appointments, self-care, medical, and personal reminders
 
-Events List to classify:
+Events:
 {json.dumps(raw_events, indent=2)}
 
-Output standard Markdown formatted specifically for Obsidian notes:
-Start with frontmatter:
+Output Obsidian Markdown using this frontmatter:
 ---
 tags: [calendar, schedule, ai-sorted]
-updated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 ---
 
 # [[Calendar_Schedule|Calendar Schedule]]
 
-For each active category, create a section `## [Category Name]`.
-Inside each section, list the items as formatted bullet points:
-`- **[Date/Time]** Event Title - Description (if any)`
+Create a section for every active category. Use this format:
+- **[Date/Time]** Event Title - Description
 
-If a category has no events, write `*No upcoming items.*` under that section.
-Do not use emojis under any circumstances. Keep output structured and readable.
-"""
+If a category has no events, write: *No upcoming items.*
+Do not use emojis."""
 
-    try:
-        response = ollama.chat(
-            model='qwen3:8b',
-            messages=[
-                {'role': 'system', 'content': 'You sort calendar events into structured markdown categories. Do not use emojis.'},
-                {'role': 'user', 'content': prompt}
-            ]
-        )
-        classified_md = response['message']['content']
+    response = ollama.chat(
+        model=LLM_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": "Sort calendar events into structured Markdown. Do not use emojis.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+    )
 
-        with open(CALENDAR_SCHEDULE_NOTE, 'w', encoding='utf-8') as f:
-            f.write(classified_md)
-            
-    except Exception as e:
-        pass
+    with open(CALENDAR_SCHEDULE_NOTE, "w", encoding="utf-8") as file:
+        file.write(response["message"]["content"])
+
+    last_events_hash = current_hash
 
 
 def sync_calendar_all():
-    """Polls Apple Calendar, extracts all events within the configured window, and sorts them."""
-    if not creds or not hasattr(creds, 'APPLE_ID') or not hasattr(creds, 'APP_PASSWORD'):
+    if not creds:
+        return
+    if not hasattr(creds, "APPLE_ID") or not hasattr(creds, "APP_PASSWORD"):
         return
 
     config = load_sync_config()
     if not config.get("sync_enabled", True):
         return
 
-    try:
-        client = caldav.DAVClient(url="https://caldav.icloud.com", username=creds.APPLE_ID, password=creds.APP_PASSWORD)
-        principal = client.principal()
-        calendars = principal.calendars()
+    client = caldav.DAVClient(
+        url="https://caldav.icloud.com",
+        username=creds.APPLE_ID,
+        password=creds.APP_PASSWORD,
+    )
+    principal = client.principal()
+    calendars = principal.calendars()
 
-        days_past = config.get("sync_days_past", 1)
-        days_ahead = config.get("sync_days_ahead", 7)
-        
-        start_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_past)
-        end_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days_ahead)
+    days_past = config.get("sync_days_past", 1)
+    days_ahead = config.get("sync_days_ahead", 7)
+    start_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+        days=days_past
+    )
+    end_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+        days=days_ahead
+    )
 
-        raw_events = []
-        ai_tasks = []
+    raw_events = []
+    tasks = []
 
-        # Load existing background task queue
-        tasks = []
-        if os.path.exists(QUEUE_FILE):
-            try:
-                with open(QUEUE_FILE, 'r', encoding='utf-8') as f:
-                    tasks = json.load(f)
-            except Exception:
-                tasks = []
-        existing_titles = [t.get('title') for t in tasks]
-        queued_new_task = False
+    if os.path.exists(QUEUE_FILE):
+        try:
+            with open(QUEUE_FILE, "r", encoding="utf-8") as file:
+                tasks = json.load(file)
+        except (OSError, json.JSONDecodeError):
+            tasks = []
 
-        for calendar in calendars:
-            try:
-                events = calendar.date_search(start=start_time, end=end_time)
-                for event in events:
-                    ical_data = Calendar.from_ical(event.data)
-                    for component in ical_data.walk():
-                        if component.name == "VEVENT":
-                            summary = str(component.get("summary", ""))
-                            description = str(component.get("description", ""))
-                            dtstart = component.get("dtstart").dt
-                            dt_str = dtstart.isoformat() if hasattr(dtstart, 'isoformat') else str(dtstart)
+    existing_titles = {task.get("title") for task in tasks}
+    queued_new_task = False
 
-                            # Handle explicit [AI Task] events for background tasks
-                            if "[AI Task]" in summary:
-                                if summary not in existing_titles:
-                                    priority = 3
-                                    if "Priority: 1" in description: priority = 1
-                                    elif "Priority: 2" in description: priority = 2
-                                    
-                                    tasks.append({
-                                        "task_id": len(tasks) + 1,
-                                        "title": summary,
-                                        "prompt": description.replace("Priority: 1", "").replace("Priority: 2", "").replace("Priority: 3", "").strip(),
-                                        "priority": priority,
-                                        "status": "pending",
-                                        "scheduled_for": dt_str
-                                    })
-                                    existing_titles.append(summary)
-                                    queued_new_task = True
-                            else:
-                                raw_events.append({
-                                    "title": summary,
-                                    "date_time": dt_str,
-                                    "description": description
-                                })
-            except Exception:
-                continue
+    for calendar in calendars:
+        try:
+            events = calendar.date_search(start=start_time, end=end_time)
+            for event in events:
+                calendar_data = Calendar.from_ical(event.data)
+                for component in calendar_data.walk():
+                    if component.name != "VEVENT":
+                        continue
 
-        if queued_new_task:
-            with open(QUEUE_FILE, 'w', encoding='utf-8') as f:
-                json.dump(tasks, f, indent=2)
+                    summary = str(component.get("summary", ""))
+                    description = str(component.get("description", ""))
+                    start_component = component.get("dtstart")
+                    if start_component is None:
+                        continue
 
-        # Run AI sorting on standard calendar entries
-        if raw_events:
-            classify_calendar_events_with_llm(raw_events, config)
+                    start_value = start_component.dt
+                    start_string = (
+                        start_value.isoformat()
+                        if hasattr(start_value, "isoformat")
+                        else str(start_value)
+                    )
 
-    except Exception:
-        pass
+                    if "[AI Task]" in summary:
+                        if summary in existing_titles:
+                            continue
+
+                        priority = 3
+                        if "Priority: 1" in description:
+                            priority = 1
+                        elif "Priority: 2" in description:
+                            priority = 2
+
+                        prompt = description
+                        for marker in ("Priority: 1", "Priority: 2", "Priority: 3"):
+                            prompt = prompt.replace(marker, "")
+
+                        tasks.append(
+                            {
+                                "task_id": len(tasks) + 1,
+                                "title": summary,
+                                "prompt": prompt.strip(),
+                                "priority": priority,
+                                "status": "pending",
+                                "scheduled_for": start_string,
+                            }
+                        )
+                        existing_titles.add(summary)
+                        queued_new_task = True
+                    else:
+                        raw_events.append(
+                            {
+                                "title": summary,
+                                "date_time": start_string,
+                                "description": description,
+                            }
+                        )
+        except Exception:
+            continue
+
+    if queued_new_task:
+        with open(QUEUE_FILE, "w", encoding="utf-8") as file:
+            json.dump(tasks, file, indent=2)
+
+    if raw_events:
+        classify_calendar_events_with_llm(raw_events, config)
 
 
 def check_task_queue(monitor):
     if not os.path.exists(QUEUE_FILE):
         return
-        
-    try:
-        with open(QUEUE_FILE, 'r', encoding='utf-8') as f:
-            tasks = json.load(f)
-    except Exception:
-        return
-        
-    now = datetime.datetime.now(datetime.timezone.utc)
-    
-    pending_tasks = []
-    for t in tasks:
-        if t.get('status') == 'pending':
-            try:
-                task_time = datetime.datetime.fromisoformat(t.get('scheduled_for').replace("Z", "+00:00"))
-                if task_time.tzinfo is None:
-                    task_time = task_time.replace(tzinfo=datetime.timezone.utc)
-                    
-                if task_time <= now:
-                    pending_tasks.append(t)
-            except Exception:
-                pending_tasks.append(t)
 
-    if not pending_tasks:
+    try:
+        with open(QUEUE_FILE, "r", encoding="utf-8") as file:
+            tasks = json.load(file)
+    except (OSError, json.JSONDecodeError):
         return
-        
-    pending_tasks.sort(key=lambda x: x.get('priority', 3))
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    pending_tasks = []
+
+    for task in tasks:
+        if task.get("status") != "pending":
+            continue
+
+        try:
+            scheduled_for = task.get("scheduled_for", "")
+            task_time = datetime.datetime.fromisoformat(
+                scheduled_for.replace("Z", "+00:00")
+            )
+            if task_time.tzinfo is None:
+                task_time = task_time.replace(tzinfo=datetime.timezone.utc)
+            if task_time <= now:
+                pending_tasks.append(task)
+        except (TypeError, ValueError):
+            pending_tasks.append(task)
+
+    pending_tasks.sort(key=lambda task: task.get("priority", 3))
     status = monitor.get_status()
-    updated = False
-    
+    changed = False
+
     for task in pending_tasks:
         if status == "HIGH_LOAD":
-            break 
-            
-        if status == "CRITICAL_BATTERY" and task.get('priority', 3) > 1:
-            continue 
-            
-        process_task(task)
-        task['status'] = 'completed'
-        updated = True
+            break
+        if status == "CRITICAL_BATTERY" and task.get("priority", 3) > 1:
+            continue
+
+        try:
+            process_task(task)
+            task["status"] = "completed"
+            changed = True
+        except Exception:
+            task["status"] = "failed"
+            changed = True
+
         status = monitor.get_status()
-        
-    if updated:
-        with open(QUEUE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(tasks, f, indent=2)
+
+    if changed:
+        with open(QUEUE_FILE, "w", encoding="utf-8") as file:
+            json.dump(tasks, file, indent=2)
 
 
 def start_lurking():
     monitor = DeviceHardwareMonitor()
+    console_cooldown_until = 0.0
+
     while True:
-        # Sync and classify all calendar items (schoolwork, homestuff, events, personal)
-        sync_calendar_all()
-        
-        # Process background tasks
-        check_task_queue(monitor)
-        
-        # Random startup chance
-        if random.random() < 0.10: 
-            pop_bear_console()
-            time.sleep(10800) 
-            
-        time.sleep(300) 
+        loop_start = time.time()
+
+        try:
+            sync_calendar_all()
+        except Exception:
+            pass
+
+        try:
+            check_task_queue(monitor)
+        except Exception:
+            pass
+
+        current_time = time.time()
+        if (
+            current_time >= console_cooldown_until
+            and random.random() < CONSOLE_POP_CHANCE
+        ):
+            try:
+                pop_bear_console()
+            except Exception:
+                pass
+            console_cooldown_until = current_time + CONSOLE_COOLDOWN_SECONDS
+
+        elapsed = time.time() - loop_start
+        time.sleep(max(0, SYNC_INTERVAL_SECONDS - elapsed))
 
 
 if __name__ == "__main__":
