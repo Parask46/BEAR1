@@ -8,17 +8,16 @@
         "type": "tabs",
         "children": [
           {
-            "id": "c1bb45a18dc3ae88",
+            "id": "aad7a8a58025e0a5",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "bases",
               "state": {
-                "file": "Paras.md",
-                "mode": "source",
-                "source": false
+                "file": "TaskNotes/Views/relationships.base",
+                "viewName": "Subtasks"
               },
-              "icon": "lucide-file",
-              "title": "Paras"
+              "icon": "tasknotes-simple",
+              "title": "relationships"
             }
           }
         ]
@@ -182,12 +181,31 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "tasknotes:Open mini calendar view": false,
+      "tasknotes:Open calendar view": false,
+      "tasknotes:Open tasks view": false,
+      "tasknotes:Open agenda view": false,
+      "tasknotes:Open Kanban board": false,
+      "tasknotes:Open Pomodoro timer": false,
+      "tasknotes:Open Pomodoro statistics": false,
+      "tasknotes:Create new task": false
     }
   },
-  "active": "c1bb45a18dc3ae88",
+  "active": "aad7a8a58025e0a5",
   "lastOpenFiles": [
-    "CHAT",
-    "Paras.md"
+    "TaskNotes/Views/mini-calendar-default.base",
+    "TaskNotes/Views/kanban-default.base",
+    "TaskNotes/Views/calendar-default.base",
+    "TaskNotes/Views/agenda-default.base",
+    "TaskNotes/Start Here.md",
+    "CHAT/Chat_2026-08-09_20-30-06.md",
+    "TaskNotes/Views/relationships.base",
+    "TaskNotes/Views/pomodoro-stats.base",
+    "TaskNotes/Views/tasks-default.base",
+    "TaskNotes/Views",
+    "TaskNotes",
+    "Paras.md",
+    "CHAT"
   ]
 }

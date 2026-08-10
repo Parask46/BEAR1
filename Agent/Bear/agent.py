@@ -39,7 +39,6 @@ MEMORY_PROMPT_FILE = os.path.join(MEMORY_DIR, 'memoryprompt.md')
 def ensure_directories():
     os.makedirs(MEMORY_DIR, exist_ok=True)
     os.makedirs(LONG_TERM_DIR, exist_ok=True)
-    os.makedirs(CHAT_ARCHIVE_DIR, exist_ok=True)
 
 ensure_directories()
 
@@ -135,32 +134,9 @@ def load_file(filepath: str, default_text: str = "") -> str:
     return default_text
 
 def clear_short_term_memory():
-    """Hard wipes the chat history JSON file on startup/reset."""
+    """Wipes the chat history JSON file when explicitly requested."""
     with open(SHORT_TERM_FILE, 'w', encoding='utf-8') as f:
         json.dump({'messages': []}, f, indent=2)
-
-def archive_chat_to_obsidian():
-    if not os.path.exists(SHORT_TERM_FILE): return
-    try:
-        with open(SHORT_TERM_FILE, 'r', encoding='utf-8') as f:
-            messages = json.load(f).get('messages', [])
-    except Exception: return
-    if len(messages) <= 1: return
-
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    archive_path = os.path.join(CHAT_ARCHIVE_DIR, f"Chat_{timestamp}.md")
-
-    md_content = f"---\ntags: [chat-archive]\ndate: {timestamp}\n---\n# Chat Archive: {timestamp}\n\n"
-    for msg in messages:
-        if msg.get('role') == 'user':
-            md_content += f"> [!info] You\n> {msg.get('content', '')}\n\n"
-        elif msg.get('role') == 'assistant':
-            md_content += f"**Bear Agent:**\n{msg.get('content', '')}\n\n---\n"
-
-    with open(archive_path, 'w', encoding='utf-8') as f:
-        f.write(md_content)
-    clear_short_term_memory()
-    print(f"\n[System: Chat archived to MEMORY-LONG\\CHAT\\Chat_{timestamp}.md]")
 
 def load_chat_history():
     if os.path.exists(SHORT_TERM_FILE):
@@ -200,12 +176,15 @@ def trigger_startup_greeting():
     response = ollama.chat(model='qwen3:8b', messages=messages)
     assistant_reply = response['message']['content']
     
-    save_chat_history([{'role': 'assistant', 'content': assistant_reply}])
+    history = load_chat_history()
+    history.append({'role': 'assistant', 'content': assistant_reply})
+    save_chat_history(history)
+    
     print(f"\nBear: {assistant_reply}\n")
     print("-" * 40)
 
 # ==========================================
-# 7. CORE PIPELINE (NOW LOADS AGENTPROMPT.MD)
+# 7. CORE PIPELINE
 # ==========================================
 def chat_with_bear_agent(user_prompt):
     telemetry.info(f"User Query: {user_prompt}")
@@ -283,8 +262,6 @@ def chat_with_bear_agent(user_prompt):
 # 8. END USER INTERFACE
 # ==========================================
 if __name__ == "__main__":
-    clear_short_term_memory()
-
     print("========================================")
     print("""████╗  █████╗ █████╗ ████╗ 
 ██╔═██╗██╔══╝██╔══██╗██╔═██╗
@@ -304,11 +281,12 @@ if __name__ == "__main__":
             if not user_input: 
                 continue
                 
-            if user_input.lower() in ['exit', 'quit', 'clear']:
-                archive_chat_to_obsidian()
-                if user_input.lower() != 'clear':
-                    print("Shutting down...")
-                    break
+            if user_input.lower() in ['exit', 'quit']:
+                print("Shutting down...")
+                break
+
+            if user_input.lower() == 'clear':
+                clear_short_term_memory()
                 print("\n[Memory Cleared - Ready for new conversation]\n")
                 continue
             
@@ -317,7 +295,6 @@ if __name__ == "__main__":
             print("-" * 40)
         
         except KeyboardInterrupt:
-            archive_chat_to_obsidian()
             print("\nShutting down...")
             break
             
