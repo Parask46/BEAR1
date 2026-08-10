@@ -16,7 +16,6 @@ try:
 except ImportError as e:
     creds = None
 
-
 def get_apple_calendar_events(days_ahead: int = 7) -> str:
     """Fetches upcoming events from Apple Calendar (iCloud) via CalDAV."""
     if not creds or not hasattr(creds, 'APPLE_ID') or not hasattr(creds, 'APP_PASSWORD'):
@@ -70,7 +69,6 @@ def get_apple_calendar_events(days_ahead: int = 7) -> str:
         
     except Exception as e:
         return f"CalDAV Connection Error: {str(e)}"
-
 
 def add_apple_calendar_event(title: str, start_time: str, end_time: str, description: str = "") -> str:
     """Creates a new event in Apple Calendar (iCloud) via CalDAV."""

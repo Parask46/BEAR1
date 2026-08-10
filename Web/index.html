@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BEAR</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
             color-scheme: dark;
@@ -49,24 +50,22 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 22vh; /* Centered initial layout */
+            padding-top: 22vh;
             transition: padding-top 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Shift top area when chat is active */
         .app.chat-active .top-area {
             padding-top: 20px;
         }
 
-        /* Perfectly aligned ASCII logo with smooth fade-out */
         .bear-logo {
             margin: 0 0 35px;
             color: var(--accent);
             font-family: "Courier New", monospace;
             font-weight: 700;
-            font-size: clamp(0.9rem, 2.5vw, 1.8rem); 
-            line-height: 1.15; 
-            letter-spacing: 0.1em; 
+            font-size: clamp(0.9rem, 2.5vw, 1.8rem);
+            line-height: 1.15;
+            letter-spacing: 0.1em;
             text-align: center;
             white-space: pre;
             text-shadow: 0 0 25px rgba(167, 139, 250, 0.4);
@@ -76,7 +75,6 @@
             max-height: 200px;
         }
 
-        /* Fade out and collapse logo when active */
         .app.chat-active .bear-logo {
             opacity: 0;
             transform: translateY(-20px);
@@ -91,7 +89,6 @@
             transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Position chat shell at bottom when active */
         .app.chat-active .chat-shell {
             position: fixed;
             bottom: 30px;
@@ -100,7 +97,6 @@
             z-index: 100;
         }
 
-        /* Modern pill-shaped chat box */
         .chat-box {
             width: 100%;
             min-height: 52px;
@@ -135,13 +131,13 @@
             padding: 0;
             line-height: 24px;
             margin: 6px 0;
-            overflow: hidden; /* Hides native scrollbars */
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
+            overflow: hidden;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
 
         textarea::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+            display: none;
         }
 
         textarea::placeholder {
@@ -165,6 +161,9 @@
             padding: 6px 10px;
             border-radius: 12px;
             transition: background 0.2s, color 0.2s;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
             user-select: none;
         }
 
@@ -319,12 +318,11 @@
             background: rgba(255, 255, 255, 0.12);
         }
 
-        /* Message Log Area */
         .messages {
             width: min(100% - 24px, 720px);
             margin-top: 10px;
             overflow-y: auto;
-            padding-bottom: 110px; /* Leaves room for floating bottom chat */
+            padding-bottom: 110px;
             flex: 1;
             display: none;
         }
@@ -342,7 +340,6 @@
             flex-direction: column;
         }
 
-        /* User Message: Styled Bubble */
         .user-message {
             max-width: 80%;
             margin-left: auto;
@@ -354,7 +351,6 @@
             white-space: pre-wrap;
         }
 
-        /* Assistant Message: No Bubble Container */
         .assistant-message {
             max-width: 100%;
             margin-right: auto;
@@ -373,7 +369,6 @@
             white-space: pre-wrap;
         }
 
-        /* Subtle Tool Indicator */
         .tool-badge {
             align-self: flex-start;
             color: var(--muted);
@@ -423,8 +418,7 @@
 
             <div class="chat-shell">
                 <form class="chat-box" id="chatForm" autocomplete="off">
-                    
-                    <!-- Left: Plus Button & Settings Menu -->
+
                     <div class="tool-menu">
                         <button class="icon-button" id="plusButton" type="button" title="Select Model & Tools">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -438,10 +432,8 @@
                         </div>
                     </div>
 
-                    <!-- Center: Expanding Textarea -->
                     <textarea id="prompt" rows="1" placeholder="Ask Bear"></textarea>
 
-                    <!-- Right: Effort Selector and Send Button -->
                     <div class="right-controls">
                         <div class="effort-menu">
                             <div class="effort-selector" id="effortSelector" title="Select Effort">
@@ -450,12 +442,10 @@
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
                             </div>
-                            
-                            <!-- Effort Dropdown -->
+
                             <div class="effort-dropdown" id="effortDropdown"></div>
                         </div>
-                        
-                        <!-- Send Button (Up Arrow) -->
+
                         <button class="icon-button send-button" id="sendButton" type="submit" title="Send message">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="19" x2="12" y2="5"></line>
@@ -467,7 +457,6 @@
             </div>
         </section>
 
-        <!-- Messages log container -->
         <section class="messages" id="messages"></section>
 
         <div class="system-status" id="statusText">Connected</div>
@@ -486,7 +475,6 @@
         const effortLabel = document.getElementById("effortLabel");
         const statusText = document.getElementById("statusText");
 
-        // Helper to determine API host when opened locally as a file vs via a server
         const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8765" : "";
         statusText.textContent = `Connected to ${API_BASE || window.location.origin}`;
 
@@ -532,7 +520,6 @@
         function renderToolDropdown() {
             toolDropdown.innerHTML = "";
 
-            // Section 1: Ollama Models
             const modelHeader = document.createElement("h3");
             modelHeader.textContent = "Select Model";
             toolDropdown.appendChild(modelHeader);
@@ -556,7 +543,6 @@
                 });
             }
 
-            // Section 2: Tools Selection
             const toolHeader = document.createElement("h3");
             toolHeader.textContent = "Tool Mode";
             toolDropdown.appendChild(toolHeader);
@@ -714,7 +700,7 @@
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || "Chat request failed.");
-                
+
                 addMessage(data.reply || "Bear returned an empty response.", "assistant", data.tools_used);
                 statusText.textContent = `Connected to ${API_BASE || window.location.origin}`;
             } catch (error) {

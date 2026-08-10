@@ -44,5 +44,22 @@
         "required": ["title", "start_time", "end_time"]
       }
     }
+  },
+  {
+  "sync_enabled": true,
+  "sync_days_past": 1,
+  "sync_days_ahead": 7,
+  "categories": {
+    "schoolwork": true,
+    "homestuff": true,
+    "events": true,
+    "personal": true
+  },
+  "category_definitions": {
+    "schoolwork": "Assignments, exams, homework, classes, studying, and academic projects.",
+    "homestuff": "Chores, home repairs, family tasks, cleaning, and house errands.",
+    "events": "Social outings, parties, hangouts with friends, concerts, and leisure activities.",
+    "personal": "Doctor or dental appointments, self-care, personal reminders, and health."
   }
+}
 ]

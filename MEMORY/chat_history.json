@@ -103,6 +103,78 @@
     {
       "role": "assistant",
       "content": "You've got a lot of \"Do nothing\" time scheduled. Here are the notable items for the next week:\n\n*   **Aug 12**: Mommy gym @ 5:30 AM\n*   **Aug 13**: Garbage/recycling day\n*   **Aug 14**: Mommy gym @ 6:30 AM\n*   **Aug 15**: Replace filter\n*   **Aug 16**: Mommy gym @ 8:00 AM\n\nWant more details on a specific day?"
+    },
+    {
+      "role": "user",
+      "content": "\u0017C:\\Users\\paras\\AppData\\Local\\Programs\\Python\\Python312\\python.exe c:/BEAR/Web/webserver.py"
+    },
+    {
+      "role": "assistant",
+      "content": "The command is trying to run a Python script (`webserver.py`) from a specific path. If you're encountering an error, double-check:  \n1. Does the file `webserver.py` exist at `C:\\BEAR\\Web\\`?  \n2. Are you in the correct directory?  \n3. Is Python 3.12 properly installed and accessible?  \n\nNeed help troubleshooting further?"
+    },
+    {
+      "role": "user",
+      "content": "show me my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "Here's what's coming up:\n\n* **Aug 12**: Mommy gym @ 5:30 AM\n* **Aug 13**: Garbage and recycling day\n* **Aug 14**: Mommy gym @ 6:30 AM\n* **Aug 15**: Replace filter; Mommy gym @ 8:00 AM\n* **Aug 16**: Mommy gym @ 8:0"
+    },
+    {
+      "role": "user",
+      "content": "show me my calendar for wedsnday this week"
+    },
+    {
+      "role": "assistant",
+      "content": "On Wednesday, Aug 12:\n- Mommy gym @ 5:30 AM\n- Wake up @ 9:00 AM\n- Do nothing from 11:00 AM to 11:00 PM"
+    },
+    {
+      "role": "user",
+      "content": "show me my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "Here's what's coming up:\n\n* **Aug 12**: Mommy gym @ 5:30 AM\n* **Aug 13**: Garbage and recycling day\n* **Aug 14**: Mommy gym @ 6:30 AM\n* **Aug 15**: Replace filter; Mommy gym @ 8:00 AM\n* **Aug 16**: Mommy gym @ 8:0"
+    },
+    {
+      "role": "user",
+      "content": "show me my calendar for this month"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm here and ready to go. What's on your mind?"
+    },
+    {
+      "role": "user",
+      "content": "so my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey! I'm here and ready to help. What's on your mind?"
+    },
+    {
+      "role": "user",
+      "content": "show me my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "Here's what's coming up:\n\n* **Aug 12**: Mommy gym @ 5:30 AM\n* **Aug 13**: Garbage/recycling day\n* **Aug 14**: Mommy gym @ 6:30 AM\n* **Aug 15**: Replace filter & Mommy gym @ 8:00 AM\n* **Aug 16**: Mommy gym @ 8:00 AM"
+    },
+    {
+      "role": "user",
+      "content": "what about on wedsnday"
+    },
+    {
+      "role": "assistant",
+      "content": "On Wednesday, Aug 12, you've got Mommy gym at 5:30 AM, wake up at 9:00 AM, and \"Do nothing\" from 11:00 AM onwards."
+    },
+    {
+      "role": "user",
+      "content": "dont i got a doctors appt?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey there. I'm all set up and ready to help. What's on your mind?"
     }
   ]
 }

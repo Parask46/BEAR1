@@ -3,9 +3,7 @@ import json
 import os
 import random
 import re
-import sqlite3
 import sys
-import time
 import webbrowser
 from pathlib import Path
 
@@ -31,78 +29,8 @@ EFFORT_CONFIG_FILE = os.path.join(BEAR_ROOT, "Web", "effort_config.json")
 
 DEFAULT_MODEL = "qwen3:8b"
 MAX_HISTORY_CHARS = 4800
-LLM_CACHE_MAX_ENTRIES = 500
 
 os.makedirs(MEMORY_DIR, exist_ok=True)
-
-
-class LLMCache:
-    def __init__(self, db_path=None, max_entries=LLM_CACHE_MAX_ENTRIES):
-        self.db_path = db_path or os.path.join(MEMORY_DIR, "llm_cache.db")
-        self.max_entries = max_entries
-        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self._create_table()
-
-    def _create_table(self):
-        self.conn.execute(
-            """CREATE TABLE IF NOT EXISTS cache (
-                query TEXT PRIMARY KEY,
-                response TEXT NOT NULL,
-                last_used REAL NOT NULL DEFAULT 0
-            )"""
-        )
-        columns = {
-            row[1]
-            for row in self.conn.execute("PRAGMA table_info(cache)").fetchall()
-        }
-        if "last_used" not in columns:
-            self.conn.execute(
-                "ALTER TABLE cache ADD COLUMN last_used REAL NOT NULL DEFAULT 0"
-            )
-        self.conn.commit()
-
-    @staticmethod
-    def _normalize(query):
-        return str(query).strip().lower()
-
-    def get(self, query):
-        key = self._normalize(query)
-        row = self.conn.execute(
-            "SELECT response FROM cache WHERE query = ?", (key,)
-        ).fetchone()
-        if row is None:
-            return None
-        self.conn.execute(
-            "UPDATE cache SET last_used = ? WHERE query = ?",
-            (time.time(), key),
-        )
-        self.conn.commit()
-        return row[0]
-
-    def set(self, query, response):
-        key = self._normalize(query)
-        self.conn.execute(
-            """INSERT OR REPLACE INTO cache
-               (query, response, last_used) VALUES (?, ?, ?)""",
-            (key, str(response), time.time()),
-        )
-        excess = (
-            self.conn.execute("SELECT COUNT(*) FROM cache").fetchone()[0]
-            - self.max_entries
-        )
-        if excess > 0:
-            self.conn.execute(
-                """DELETE FROM cache WHERE query IN
-                   (SELECT query FROM cache ORDER BY last_used ASC LIMIT ?)""",
-                (excess,),
-            )
-        self.conn.commit()
-
-    def close(self):
-        self.conn.close()
-
-
-llm_cache = LLMCache()
 
 
 def load_file(path, default=""):
@@ -344,6 +272,7 @@ def chat_with_bear_agent(user_prompt, effort=None, model=None):
     config = load_effort_config()
     selected_effort = normalize_effort(effort, config)
     selected_model = resolve_model(model, config)
+
     effort_data = config.get("efforts", {}).get(selected_effort, {})
     instruction = effort_data.get("instruction", "Give a helpful response.")
     prompt = (
@@ -394,7 +323,6 @@ def chat_with_bear_agent(user_prompt, effort=None, model=None):
     except Exception as error:
         return f"[System Error: could not reach model '{selected_model}' - {error}]", tools_used
 
-    llm_cache.set(cache_key, answer)
     history.extend([
         {"role": "user", "content": user_prompt},
         {"role": "assistant", "content": answer},
@@ -428,7 +356,7 @@ def main():
                     continue
 
                 reply, tools = chat_with_bear_agent(user_input)
-                
+
                 print(f"\nBear: {reply}")
                 if tools:
                     print(f"[Tools Used: {', '.join(tools)}]")
@@ -438,8 +366,8 @@ def main():
                 break
             except Exception as error:
                 print(f"\n[System Error: {error} - Chat is continuing...]\n")
-    finally:
-        llm_cache.close()
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
