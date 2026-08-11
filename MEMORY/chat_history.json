@@ -175,6 +175,38 @@
     {
       "role": "assistant",
       "content": "Hey there. I'm all set up and ready to help. What's on your mind?"
+    },
+    {
+      "role": "user",
+      "content": "[The user selected the get_current_weather tool. Use it when appropriate.]\n\nyo"
+    },
+    {
+      "role": "assistant",
+      "content": "Yo! What's up?"
+    },
+    {
+      "role": "user",
+      "content": "[The user selected the get_current_weather tool. Use it when appropriate.]\n\nshow me my calendar an what the next month looks like"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm all set and ready to go. What can I help you with today?"
+    },
+    {
+      "role": "user",
+      "content": "[The user selected the get_current_weather tool. Use it when appropriate.]\n\nshow me my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "Here's your calendar for the next week:\n\n* **Aug 12**: Mommy gym @ 5:30 AM  \n* **Aug 13**: Garbage/recycling day  \n* **Aug 14**: Mommy gym @ 6:30 AM  \n* **Aug 15**: Replace filter + Mommy gym @ 8:00 AM  \n* **Aug 16**: Mommy gym @ 8:00 AM  \n\nNeed a monthly view or more details? 🗓️"
+    },
+    {
+      "role": "user",
+      "content": "yo"
+    },
+    {
+      "role": "assistant",
+      "content": "Yo! What's up?"
     }
   ]
 }

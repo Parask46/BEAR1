@@ -1,7 +1,7 @@
 {
   "sync_enabled": true,
   "sync_days_past": 1,
-  "sync_days_ahead": 7,
+  "sync_days_ahead": 31,
   "categories": {
     "schoolwork": true,
     "homestuff": true,

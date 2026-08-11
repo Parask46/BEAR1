@@ -4,20 +4,33 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
+# Set up directory paths based on your project structure
 BEAR_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 WEB_DIR = os.path.join(BEAR_ROOT, "Web")
 AGENT_DIR = os.path.join(BEAR_ROOT, "Agent", "Bear")
+TOOLS_DIR = os.path.join(BEAR_ROOT, "TOOLS")
 
-if AGENT_DIR not in sys.path:
-    sys.path.insert(0, AGENT_DIR)
+# Add project source directories to sys.path BEFORE importing local modules
+for folder in (BEAR_ROOT, AGENT_DIR, TOOLS_DIR):
+    if folder not in sys.path:
+        sys.path.insert(0, folder)
 
+# Imports from agent module
 from agent import (
-    ALL_FUNCTIONS,
     ALL_SCHEMAS,
     chat_with_bear_agent,
     get_installed_ollama_models,
     load_effort_config,
 )
+
+# Import ALL_FUNCTIONS from tools.py located inside C:\BEAR\TOOLS\
+try:
+    from TOOLS.tools import ALL_FUNCTIONS
+except ModuleNotFoundError:
+    try:
+        from tools import ALL_FUNCTIONS
+    except ModuleNotFoundError:
+        from agent import ALL_FUNCTIONS
 
 HOST = "127.0.0.1"
 PORT = 8765
@@ -109,7 +122,6 @@ class BearHandler(SimpleHTTPRequestHandler):
                     f"Use it when appropriate.]\n\n{message}"
                 )
 
-            # --- MODIFIED: Unpack tuple and inject into JSON ---
             reply, tools = chat_with_bear_agent(
                 message,
                 effort=effort,
@@ -117,11 +129,10 @@ class BearHandler(SimpleHTTPRequestHandler):
             )
             self.send_json(200, {
                 "reply": reply,
-                "tools_used": tools,  # New payload data
+                "tools_used": tools,
                 "effort": effort,
                 "model": model,
             })
-            # ---------------------------------------------------
             
         except json.JSONDecodeError:
             self.send_json(400, {"error": "Invalid JSON request"})

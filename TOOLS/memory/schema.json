@@ -1,31 +1,41 @@
 [
   {
-    "type": "function",
-    "function": {
-      "name": "write_note",
-      "description": "Save or update a note in the Obsidian long-term memory vault. Use this when the user asks you to remember something permanently.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "filename": {"type": "string", "description": "Name of file (e.g. user_facts.md)"},
-          "content": {"type": "string", "description": "The markdown content to save."}
+    "name": "write_note",
+    "description": "Write a markdown note into the long-term Obsidian-style memory vault.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Short, human-readable title for the note."
         },
-        "required": ["filename", "content"]
-      }
+        "content": {
+          "type": "string",
+          "description": "Full markdown content to store in the note body."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of tags to add to YAML frontmatter."
+        }
+      },
+      "required": ["title", "content"]
     }
   },
   {
-    "type": "function",
-    "function": {
-      "name": "read_note",
-      "description": "Read the contents of an existing note from long-term memory. Use this to recall facts you have saved.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "filename": {"type": "string", "description": "Name of file to read."}
-        },
-        "required": ["filename"]
-      }
+    "name": "read_note",
+    "description": "Read a markdown note from the long-term memory vault by filename.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "filename": {
+          "type": "string",
+          "description": "Filename inside MEMORY/MEMORY-LONG (e.g. memory-2026-08-10_12-00-00.md)."
+        }
+      },
+      "required": ["filename"]
     }
   }
 ]
