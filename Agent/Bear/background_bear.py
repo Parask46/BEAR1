@@ -75,28 +75,57 @@ def pop_bear_console():
     )
 
 
-def process_task(task):
-    response = ollama.chat(
-        model=LLM_MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are an AI agent executing a scheduled background task. "
-                    "Output the result cleanly using Obsidian Markdown. No emojis."
-                ),
-            },
-            {"role": "user", "content": task["prompt"]},
-        ],
-    )
-    output = response["message"]["content"]
+from typing import TypedDict
+from langgraph.graph import StateGraph, END
+from langchain_community.chat_models import ChatOllama
+from langchain_core.prompts import ChatPromptTemplate
 
+# Define State
+class TaskState(TypedDict):
+    task_title: str
+    prompt: str
+    plan: str
+    result: str
+
+# Node 1: Planner
+def plan_node(state: TaskState):
+    llm = ChatOllama(model=LLM_MODEL)
+    prompt = ChatPromptTemplate.from_template("Plan how to execute this background task step-by-step: {task}. Prompt: {prompt}")
+    plan = llm.invoke(prompt.format(task=state["task_title"], prompt=state["prompt"])).content
+    return {"plan": plan}
+
+# Node 2: Executor
+def execute_node(state: TaskState):
+    llm = ChatOllama(model=LLM_MODEL)
+    prompt = ChatPromptTemplate.from_template("Execute the task based on this plan:\n{plan}\n\nTask: {task}. Output the result cleanly in Obsidian Markdown. No emojis.")
+    result = llm.invoke(prompt.format(plan=state["plan"], task=state["task_title"])).content
+    return {"result": result}
+
+# Build LangGraph Workflow
+workflow = StateGraph(TaskState)
+workflow.add_node("planner", plan_node)
+workflow.add_node("executor", execute_node)
+workflow.set_entry_point("planner")
+workflow.add_edge("planner", "executor")
+workflow.add_edge("executor", END)
+task_app = workflow.compile()
+
+def process_task(task):
+    """Replaces the old process_task with LangGraph execution."""
+    initial_state = {
+        "task_title": task["title"],
+        "prompt": task["prompt"],
+        "plan": "",
+        "result": ""
+    }
+    
+    # Run the multi-step agent workflow
+    final_state = task_app.invoke(initial_state)
+    output = final_state["result"]
+
+    # Save to Markdown
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    safe_title = "".join(
-        character
-        for character in task["title"]
-        if character.isalnum() or character == " "
-    ).strip()
+    safe_title = "".join(c for c in task["title"] if c.isalnum() or c == " ").strip()
     filename = f"TaskResult_{safe_title.replace(' ', '_')}_{timestamp}.md"
     filepath = os.path.join(TASKS_DIR, filename)
 
@@ -107,7 +136,7 @@ def process_task(task):
         f"priority: {task.get('priority', 3)}\n"
         "---\n"
         f"# {task['title']}\n\n"
-        f"**Prompt:** {task['prompt']}\n\n"
+        f"**Plan Strategy:**\n{final_state['plan']}\n\n"
         "---\n\n"
         "### Result\n"
         f"{output}\n"
